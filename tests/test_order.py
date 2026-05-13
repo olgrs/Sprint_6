@@ -6,73 +6,48 @@ from selenium.webdriver.support.ui import WebDriverWait
 
 from pages.main_page import MainPage
 from pages.order_page import OrderPage
+from locators.main_page_locators import MainPageLocators
 from urls import BASE_URL, DZEN_URL
-
-
-ORDER_DATA = [
-    (
-        "top",
-        "Иван",
-        "Иванов",
-        "ул. Иванова, 1",
-        "Бульвар Рокоссовского",
-        "89001234567",
-        "15.05.2026",
-        "сутки",
-        "black",
-        ""
-    ),
-    (
-        "bottom",
-        "Алексей",
-        "Алексеев",
-        "ул. Алексеева, д.10",
-        "Лихоборы",
-        "88888888888",
-        "12.06.2026",
-        "семеро суток",
-        "grey",
-        "Позвонить за час"
-    )
-]
+from data_collection import ORDER_DATA_1, ORDER_DATA_2
 
 
 class TestOrder:
-    @allure.title("Заказ самоката через {button_type} кнопку")
+    @allure.title("Заказ самоката")
     @pytest.mark.parametrize(
+        "button_locator, order_data",
         [
-            "button_type",
-            "name",
-            "surname",
-            "address",
-            "metro",
-            "phone",
-            "date",
-            "rental_period",
-            "color",
-            "comment"
-        ],
-        ORDER_DATA
+            (MainPageLocators.ORDER_BUTTON_BOTTOM,
+             ORDER_DATA_1),
+            (MainPageLocators.ORDER_BUTTON_TOP,
+             ORDER_DATA_2),
+        ]
     )
     @allure.description(
         "Проверка полного позитивного сценария заказа самоката"
     )
-    def test_order_success(
-        self, driver, button_type, name, surname, address,
-        metro, phone, date, rental_period, color, comment
+    def test_order_create(
+        self, driver, button_locator, order_data
     ):
         main_page = MainPage(driver)
         main_page.open()
         main_page.accept_cookies()
 
-        if button_type == "top":
-            main_page.click_top_order_button()
-        else:
-            main_page.click_bottom_order_button()
+        main_page.click_order_button(button_locator)
 
         order_page = OrderPage(driver)
-        order_page.fill_first_step(name, surname, address, metro, phone)
-        order_page.fill_second_step(date, rental_period, color, comment)
+        order_page.fill_first_step(
+            order_data["name"],
+            order_data["surname"],
+            order_data["address"],
+            order_data["metro"],
+            order_data["phone"]
+        )
+        order_page.fill_second_step(
+            order_data["date"],
+            order_data["rental_period"],
+            order_data["color"],
+            order_data["comment"]
+        )
 
         order_page.confirm_order()
 

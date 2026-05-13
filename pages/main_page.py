@@ -23,13 +23,9 @@ class MainPage(BasePage):
         except TimeoutException:
             pass
 
-    @allure.step("Нажимаем верхнюю кнопку «Заказать»")
-    def click_top_order_button(self):
-        self.click_to_element(MainPageLocators.TOP_ORDER_BUTTON)
-
-    @allure.step("Нажимаем нижнюю кнопку «Заказать»")
-    def click_bottom_order_button(self):
-        self.click_to_element(MainPageLocators.BOTTOM_ORDER_BUTTON)
+    @allure.step("Нажимаем кнопку «Заказать»")
+    def click_order_button(self, button_locator):
+        self.click_to_element(button_locator)
 
     @allure.step("Кликаем по вопросу: {question_text}")
     def click_question_by_text(self, question_text):
