@@ -1,71 +1,70 @@
 import allure
-from selenium.common.exceptions import ElementClickInterceptedException
 from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
-from locators.order_page_locators import *
+from locators.order_page_locators import OrderPageLocators
+from .base_page import BasePage
 
 
-class OrderPage:
-
+class OrderPage(BasePage):
     def __init__(self, driver):
-        self.driver = driver
+        super().__init__(driver)
         self.wait = WebDriverWait(driver, 10)
 
     @allure.step("Заполняем первый шаг заказа")
     def fill_first_step(self, name, surname, address, metro_station, phone):
         """Заполняет поля первого шага и нажимает Далее"""
-        self.wait.until(EC.visibility_of_element_located(("xpath", FIELD_NAME))).send_keys(name)
-        self.driver.find_element("xpath", FIELD_SURNAME).send_keys(surname)
-        self.driver.find_element("xpath", FIELD_ADDRESS).send_keys(address)
-        self.driver.find_element("xpath", METRO_STATION_INPUT).click()
-        self.wait.until(EC.element_to_be_clickable(("xpath", METRO_STATION_OPTION.format(metro_station)))).click()
-        self.driver.find_element("xpath", FIELD_PHONE).send_keys(phone)
-        next_button = self.driver.find_element("xpath", BUTTON_NEXT)
+        self.add_text_to_element(OrderPageLocators.FIELD_NAME, name)
+        self.add_text_to_element(OrderPageLocators.FIELD_SURNAME, surname)
+        self.add_text_to_element(OrderPageLocators.FIELD_ADDRESS, address)
+        self.click_to_element(OrderPageLocators.METRO_STATION_INPUT)
+        self.click_to_element(
+            self.format_locators(OrderPageLocators.METRO_STATION_OPTION,
+                                 metro_station)
+        )
+        self.add_text_to_element(OrderPageLocators.FIELD_PHONE, phone)
+
         try:
-            next_button.click()
-        except ElementClickInterceptedException:
-            self.driver.execute_script("arguments[0].click();", next_button)
+            self.click_to_element(OrderPageLocators.BUTTON_NEXT)
+        except:
+            next_btn = self.driver.find_element(*OrderPageLocators.BUTTON_NEXT)
+            self.driver.execute_script("arguments[0].click();", next_btn)
 
     @allure.step("Заполняем второй шаг заказа")
     def fill_second_step(self, date, rental_period, color, comment=""):
         """Заполняет поля второго шага и нажимает Заказать"""
-        date_field = self.wait.until(EC.visibility_of_element_located(("xpath", FIELD_DATE)))
+        date_field = self.find_element_with_wait(OrderPageLocators.FIELD_DATE)
         date_field.send_keys(date)
         date_field.send_keys(Keys.ESCAPE)
-        dropdown = self.driver.find_element("xpath", DROPDOWN_RENTAL_PERIOD)
-        try:
-            dropdown.click()
-        except ElementClickInterceptedException:
-            self.driver.execute_script("arguments[0].click();", dropdown)
-
-        self.wait.until(EC.element_to_be_clickable(("xpath", RENTAL_PERIOD_OPTION.format(rental_period)))).click()
+        self.click_to_element(OrderPageLocators.DROPDOWN_RENTAL_PERIOD)
+        self.click_to_element(
+            self.format_locators(OrderPageLocators.RENTAL_PERIOD_OPTION, rental_period)
+        )
         if color == "black":
-            self.driver.find_element("xpath", CHECKBOX_BLACK).click()
+            self.click_to_element(OrderPageLocators.CHECKBOX_BLACK)
         elif color == "grey":
-            self.driver.find_element("xpath", CHECKBOX_GREY).click()
+            self.click_to_element(OrderPageLocators.CHECKBOX_GREY)
         if comment:
-            self.driver.find_element("xpath", FIELD_COMMENT).send_keys(comment)
-        order_btn = self.driver.find_element("xpath", BUTTON_ORDER)
+            self.add_text_to_element(OrderPageLocators.FIELD_COMMENT, comment)
+
         try:
-            order_btn.click()
-        except ElementClickInterceptedException:
+            self.click_to_element(OrderPageLocators.BUTTON_ORDER)
+        except:
+            order_btn = self.driver.find_element(*OrderPageLocators.BUTTON_ORDER)
             self.driver.execute_script("arguments[0].click();", order_btn)
 
     @allure.step("Подтверждаем заказ в модальном окне")
     def confirm_order(self):
         """Подтверждает заказ в модальном окне"""
-        self.wait.until(EC.visibility_of_element_located(("xpath", MODAL_CONFIRM)))
-        self.wait.until(EC.element_to_be_clickable(("xpath", BUTTON_CONFIRM_YES))).click()
+        self.find_element_with_wait(OrderPageLocators.MODAL_CONFIRM)
+        self.click_to_element(OrderPageLocators.BUTTON_CONFIRM_YES)
 
     @allure.step("Получаем текст из окна успеха")
     def get_success_text(self):
         """Возвращает текст из окна успешного заказа"""
-        return self.wait.until(EC.visibility_of_element_located(("xpath", MODAL_SUCCESS_TEXT))).text
+        return self.get_text_from_element(OrderPageLocators.MODAL_SUCCESS_TEXT)
     
     @allure.step("Переходим на страницу заказа")
     def close_success_modal(self):
         """Закрывает окно успешного заказа, кликая по кнопке 'Посмотреть статус'"""
-        btn = self.wait.until(EC.element_to_be_clickable(("xpath", MODAL_SUCCESS_ORDER)))
-        btn.click()
+        self.click_to_element(OrderPageLocators.MODAL_SUCCESS_ORDER)

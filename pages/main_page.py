@@ -1,58 +1,45 @@
 import allure
-from selenium.common.exceptions import ElementClickInterceptedException, NoSuchElementException
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.ui import WebDriverWait
+from selenium.common.exceptions import TimeoutException
 
-from locators.main_page_locators import *
+from locators.main_page_locators import MainPageLocators
 from urls import BASE_URL
+from .base_page import BasePage
 
 
-class MainPage:
-
+class MainPage(BasePage):
     def __init__(self, driver):
-        self.driver = driver
-        self.wait = WebDriverWait(driver, 10)
+        super().__init__(driver)
 
     @allure.step("Открываем главную страницу")
     def open(self):
         """Открывает главную страницу"""
-        self.driver.get(BASE_URL)
-
-
-    def is_cookie_panel_present(self):
-        """Проверяет наличие панели куки"""
-        return len(self.driver.find_elements("id", "rcc-confirm-button")) > 0
+        self.go_to_url(BASE_URL)
 
     @allure.step("Принимаем куки")
     def accept_cookies(self):
-        """Закрывает панель куки, если она есть"""
-        if self.is_cookie_panel_present():
-            btn = self.driver.find_element("id", "rcc-confirm-button")
-            self.driver.execute_script("arguments[0].click();", btn)
+        try:
+            cookie_btn = self.driver.find_element("id", "rcc-confirm-button")
+            self.driver.execute_script("arguments[0].click();", cookie_btn)
+        except TimeoutException:
+            pass
 
     @allure.step("Нажимаем верхнюю кнопку «Заказать»")
     def click_top_order_button(self):
-        """Клик по верхней кнопке Заказать"""
-        self.wait.until(EC.element_to_be_clickable(
-            ("xpath", TOP_ORDER_BUTTON)
-        )).click()
+        self.click_to_element(MainPageLocators.TOP_ORDER_BUTTON)
 
     @allure.step("Нажимаем нижнюю кнопку «Заказать»")
     def click_bottom_order_button(self):
-        """Клик по нижней кнопке Заказать"""
-        self.wait.until(EC.element_to_be_clickable(
-            ("xpath", BOTTOM_ORDER_BUTTON)
-        )).click()
+        self.click_to_element(MainPageLocators.BOTTOM_ORDER_BUTTON)
 
     @allure.step("Кликаем по вопросу: {question_text}")
     def click_question_by_text(self, question_text):
         """Кликает по вопросу с указанным текстом"""
         locator = ("xpath", f"//div[contains(@class, 'accordion__button') and text()='{question_text}']")
-        element = self.wait.until(EC.presence_of_element_located(locator))
-        self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", element)
+        element = self.find_element_with_wait(locator)
+        self.scroll_to_element(element)
         try:
             element.click()
-        except ElementClickInterceptedException:
+        except:
             self.driver.execute_script("arguments[0].click();", element)
 
     @allure.step("Получаем текст ответа для вопроса: {question_text}")
@@ -60,15 +47,14 @@ class MainPage:
         """Открывает вопрос и возвращает текст ответа"""
         self.click_question_by_text(question_text)
         panel_locator = ("xpath", f"//div[text()='{question_text}']/ancestor::div[contains(@class, 'accordion__item')]//div[contains(@class, 'accordion__panel')]")
-        panel = self.wait.until(EC.visibility_of_element_located(panel_locator))
-        return panel.text
+        return self.get_text_from_element(panel_locator)
 
     @allure.step("Кликаем по логотипу Самоката")
     def click_scooter_logo(self):
         """Клик по логотипу Самоката"""
-        self.wait.until(EC.element_to_be_clickable(("xpath", LOGO_SCOOTER))).click()
+        self.click_to_element(MainPageLocators.LOGO_SCOOTER)
 
     @allure.step("Кликаем по логотипу Яндекса")
     def click_yandex_logo(self):
         """Клик по логотипу Яндекса"""
-        self.wait.until(EC.element_to_be_clickable(("xpath", LOGO_YANDEX))).click()
+        self.click_to_element(MainPageLocators.LOGO_YANDEX)
