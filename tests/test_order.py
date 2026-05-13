@@ -1,8 +1,5 @@
 import allure
 import pytest
-from selenium.common.exceptions import TimeoutException
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.ui import WebDriverWait
 
 from pages.main_page import MainPage
 from pages.order_page import OrderPage
@@ -12,26 +9,11 @@ from data_collection import ORDER_DATA_1, ORDER_DATA_2
 
 
 class TestOrder:
-    @allure.title("Заказ самоката")
-    @pytest.mark.parametrize(
-        "button_locator, order_data",
-        [
-            (MainPageLocators.ORDER_BUTTON_BOTTOM,
-             ORDER_DATA_1),
-            (MainPageLocators.ORDER_BUTTON_TOP,
-             ORDER_DATA_2),
-        ]
-    )
-    @allure.description(
-        "Проверка полного позитивного сценария заказа самоката"
-    )
-    def test_order_create(
-        self, driver, button_locator, order_data
-    ):
+    def _complete_order(self, driver, button_locator, order_data):
+        """Успешное оформление заказа"""
         main_page = MainPage(driver)
         main_page.open()
         main_page.accept_cookies()
-
         main_page.click_order_button(button_locator)
 
         order_page = OrderPage(driver)
@@ -48,44 +30,61 @@ class TestOrder:
             order_data["color"],
             order_data["comment"]
         )
-
         order_page.confirm_order()
-
         success_text = order_page.get_success_text()
+        order_page.close_success_modal()
+        return main_page, order_page, success_text
+
+    @allure.title("Проверка текста в окне успешного заказа")
+    @pytest.mark.parametrize(
+        "button_locator, order_data",
+        [
+            (MainPageLocators.ORDER_BUTTON_BOTTOM, ORDER_DATA_1),
+            (MainPageLocators.ORDER_BUTTON_TOP, ORDER_DATA_2),
+        ]
+    )
+    def test_success_message(self, driver, button_locator, order_data):
+        _, _, success_text = self._complete_order(driver, button_locator, order_data)
         assert "Заказ оформлен" in success_text, (
             f"Ожидалось 'Заказ оформлен', но получено '{success_text}'"
         )
 
-        order_page.close_success_modal()
-
+    @allure.title("Переход на главную по клику на самокат после заказа")
+    @pytest.mark.parametrize(
+        "button_locator, order_data",
+        [
+            (MainPageLocators.ORDER_BUTTON_BOTTOM, ORDER_DATA_1),
+            (MainPageLocators.ORDER_BUTTON_TOP, ORDER_DATA_2),
+        ]
+    )
+    def test_scooter_logo_redirect(self, driver, button_locator, order_data):
+        main_page, _, _ = self._complete_order(driver, button_locator, order_data)
         main_page.click_scooter_logo()
-        WebDriverWait(driver, 10).until(EC.url_to_be(BASE_URL))
-        assert driver.current_url == BASE_URL, (
-            "После клика на самокат не произошел переход на главную."
-            f"Текущий URL: {driver.current_url}"
+        main_page.wait_for_url_to_be(BASE_URL)
+        assert main_page.get_current_url() == BASE_URL, (
+            f"После клика на самоката не открылась главная. Текущий URL: {main_page.get_current_url()}"
         )
 
-        original_window = driver.current_window_handle
+    @allure.title("Переход на Дзен по логотипу Яндекса после заказа")
+    @pytest.mark.parametrize(
+        "button_locator, order_data",
+        [
+            (MainPageLocators.ORDER_BUTTON_BOTTOM, ORDER_DATA_1),
+            (MainPageLocators.ORDER_BUTTON_TOP, ORDER_DATA_2),
+        ]
+    )
+    def test_yandex_logo_redirect(self, driver, button_locator, order_data):
+        main_page, _, _ = self._complete_order(driver, button_locator, order_data)
         main_page.click_yandex_logo()
-        WebDriverWait(driver, 10).until(EC.number_of_windows_to_be(2))
-        new_window = [
-            wh for wh in driver.window_handles
-            if wh != original_window
-        ][0]
-        driver.switch_to.window(new_window)
 
-        try:
-            WebDriverWait(driver, 10).until(
-                lambda d: d.current_url != "about:blank"
-            )
-        except TimeoutException:
-            pass
+        original_window = main_page.switch_to_new_window()
+        if original_window is None:
+            assert False, "После клика на логотип Яндекса не открылось новое окно"
 
-        current_url = driver.current_url.split('?')[0]
+        main_page.wait_for_url_not_blank()
+        current_url = main_page.get_current_url().split('?')[0]
         assert current_url == DZEN_URL, (
-            f"Ожидался переход на главную страницу Дзена, "
-            f"но получен URL: {current_url}"
+            f"Ожидался переход на главную Дзена, но получен URL: {current_url}"
         )
-
-        driver.close()
-        driver.switch_to.window(original_window)
+        main_page.close_current_window()
+        main_page.switch_to_window(original_window)
