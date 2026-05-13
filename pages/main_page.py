@@ -3,14 +3,11 @@ from selenium.common.exceptions import ElementClickInterceptedException, NoSuchE
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
+from locators.main_page_locators import *
+
 
 class MainPage:
     URL = "https://qa-scooter.education-services.ru/"
-
-    BOTTOM_ORDER_BUTTON = "//div[contains(@class, 'Home_FinishButton')]/button[text()='Заказать']"
-    LOGO_SCOOTER = "//a[contains(@class, 'Header_LogoScooter')]"
-    LOGO_YANDEX = "//a[contains(@class, 'Header_LogoYandex')]"
-    TOP_ORDER_BUTTON = "//div[contains(@class, 'Header')]/button[text()='Заказать']"
 
     def __init__(self, driver):
         self.driver = driver
@@ -37,14 +34,14 @@ class MainPage:
     def click_top_order_button(self):
         """Клик по верхней кнопке Заказать"""
         self.wait.until(EC.element_to_be_clickable(
-            ("xpath", self.TOP_ORDER_BUTTON)
+            ("xpath", TOP_ORDER_BUTTON)
         )).click()
 
     @allure.step("Нажимаем нижнюю кнопку «Заказать»")
     def click_bottom_order_button(self):
         """Клик по нижней кнопке Заказать"""
         self.wait.until(EC.element_to_be_clickable(
-            ("xpath", self.BOTTOM_ORDER_BUTTON)
+            ("xpath", BOTTOM_ORDER_BUTTON)
         )).click()
 
     @allure.step("Кликаем по вопросу: {question_text}")
@@ -69,9 +66,9 @@ class MainPage:
     @allure.step("Кликаем по логотипу Самоката")
     def click_scooter_logo(self):
         """Клик по логотипу Самоката"""
-        self.wait.until(EC.element_to_be_clickable(("xpath", self.LOGO_SCOOTER))).click()
+        self.wait.until(EC.element_to_be_clickable(("xpath", LOGO_SCOOTER))).click()
 
     @allure.step("Кликаем по логотипу Яндекса")
     def click_yandex_logo(self):
         """Клик по логотипу Яндекса"""
-        self.wait.until(EC.element_to_be_clickable(("xpath", self.LOGO_YANDEX))).click()
+        self.wait.until(EC.element_to_be_clickable(("xpath", LOGO_YANDEX))).click()
