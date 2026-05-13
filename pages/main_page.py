@@ -4,10 +4,10 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
 from locators.main_page_locators import *
+from urls import BASE_URL
 
 
 class MainPage:
-    URL = "https://qa-scooter.education-services.ru/"
 
     def __init__(self, driver):
         self.driver = driver
@@ -16,7 +16,7 @@ class MainPage:
     @allure.step("Открываем главную страницу")
     def open(self):
         """Открывает главную страницу"""
-        self.driver.get(self.URL)
+        self.driver.get(BASE_URL)
 
 
     def is_cookie_panel_present(self):

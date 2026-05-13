@@ -3,8 +3,11 @@ import pytest
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
+
 from pages.main_page import MainPage
 from pages.order_page import OrderPage
+from urls import BASE_URL, DZEN_URL
+
 
 ORDER_DATA = [
     (
@@ -81,8 +84,8 @@ class TestOrder:
         order_page.close_success_modal()
 
         main_page.click_scooter_logo()
-        WebDriverWait(driver, 10).until(EC.url_to_be(MainPage.URL))
-        assert driver.current_url == MainPage.URL, (
+        WebDriverWait(driver, 10).until(EC.url_to_be(BASE_URL))
+        assert driver.current_url == BASE_URL, (
             "После клика на самокат не произошел переход на главную."
             f"Текущий URL: {driver.current_url}"
         )
@@ -104,7 +107,7 @@ class TestOrder:
             pass
 
         current_url = driver.current_url.split('?')[0]
-        assert current_url == "https://dzen.ru/", (
+        assert current_url == DZEN_URL, (
             f"Ожидался переход на главную страницу Дзена, "
             f"но получен URL: {current_url}"
         )
