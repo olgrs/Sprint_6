@@ -19,6 +19,11 @@ class BasePage:
         self.wait.until(EC.element_to_be_clickable(some))
         self.driver.find_element(*some).click()
 
+    def wait_text(self, locator, text):
+        self.wait.until_not(
+            EC.text_to_be_present_in_element_value(locator, text))
+        self.driver.find_element(*locator).text
+
     def add_text_to_element(self, locator, text):
         self.find_element_with_wait(locator).send_keys(text)
 
@@ -31,10 +36,18 @@ class BasePage:
         return method, locator
 
     def switch_to_another_window(self):
-        windows_list = self.driver.window_handles
-        self.driver.switch_to.window(windows_list[-1])
+        self.driver.switch_to.window(self.driver.window_handles[1])
 
-    def scroll_to_element(self, element):
-        self.driver.execute_script(
-            "arguments[0].scrollIntoView({block: 'center'});", element
-        )
+    def scroll_to_element(self, locator):
+        element = self.find_element_with_wait(locator)
+        self.driver.execute_script('arguments[0].scrollIntoView();', element)
+
+    def get_current_url(self):
+        return self.driver.current_url
+
+    def wait_for_url_not_blank(self):
+        WebDriverWait(self.driver, 10).until(lambda d: d.current_url != "about:blank")
+
+    def close_cookie_window(self, locator):
+        self.find_element_with_wait(locator)
+        self.click_to_element(locator)

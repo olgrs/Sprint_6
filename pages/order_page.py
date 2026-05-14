@@ -1,63 +1,66 @@
 import allure
 from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.support.ui import WebDriverWait
 
 from locators.order_page_locators import OrderPageLocators
+from locators.base_page_locators import BasePageLocators
 from .base_page import BasePage
+from urls import BASE_URL
 
 
 class OrderPage(BasePage):
-    def __init__(self, driver):
-        super().__init__(driver)
-        self.wait = WebDriverWait(driver, 10)
-
     @allure.step("Заполняем первый шаг заказа")
-    def fill_first_step(self, name, surname, address, metro_station, phone):
-        """Заполняет поля первого шага и нажимает Далее"""
-        self.add_text_to_element(OrderPageLocators.FIELD_NAME, name)
-        self.add_text_to_element(OrderPageLocators.FIELD_SURNAME, surname)
-        self.add_text_to_element(OrderPageLocators.FIELD_ADDRESS, address)
+    def fill_first_step(self, data):
+        """Заполняет поля первого шага"""
+        self.add_text_to_element(OrderPageLocators.FIELD_NAME, data["name"])
+        self.add_text_to_element(OrderPageLocators.FIELD_SURNAME, data["surname"])
+        self.add_text_to_element(OrderPageLocators.FIELD_ADDRESS, data["address"])
         self.click_to_element(OrderPageLocators.METRO_STATION_INPUT)
         self.click_to_element(
             self.format_locators(OrderPageLocators.METRO_STATION_OPTION,
-                                 metro_station)
+                                 data["metro"])
         )
-        self.add_text_to_element(OrderPageLocators.FIELD_PHONE, phone)
+        self.add_text_to_element(OrderPageLocators.FIELD_PHONE, data["phone"])
 
-        try:
-            self.click_to_element(OrderPageLocators.BUTTON_NEXT)
-        except:
-            next_btn = self.driver.find_element(*OrderPageLocators.BUTTON_NEXT)
-            self.driver.execute_script("arguments[0].click();", next_btn)
+    @allure.step("Кликаем по кнопке 'Далее'")
+    def click_next_button(self):
+        self.click_to_element(OrderPageLocators.BUTTON_NEXT)
 
     @allure.step("Заполняем второй шаг заказа")
-    def fill_second_step(self, date, rental_period, color, comment=""):
+    def fill_second_step(self, data):
         """Заполняет поля второго шага и нажимает Заказать"""
         date_field = self.find_element_with_wait(OrderPageLocators.FIELD_DATE)
-        date_field.send_keys(date)
+        date_field.send_keys(data["date"])
         date_field.send_keys(Keys.ESCAPE)
         self.click_to_element(OrderPageLocators.DROPDOWN_RENTAL_PERIOD)
         self.click_to_element(
-            self.format_locators(OrderPageLocators.RENTAL_PERIOD_OPTION, rental_period)
+            self.format_locators(OrderPageLocators.RENTAL_PERIOD_OPTION, data["rental_period"])
         )
-        if color == "black":
-            self.click_to_element(OrderPageLocators.CHECKBOX_BLACK)
-        elif color == "grey":
-            self.click_to_element(OrderPageLocators.CHECKBOX_GREY)
-        if comment:
-            self.add_text_to_element(OrderPageLocators.FIELD_COMMENT, comment)
+        checkbox_locator = self.format_locators(OrderPageLocators.CHECKBOX_COLOR, data["color"])
+        self.click_to_element(checkbox_locator)
+        self.add_text_to_element(OrderPageLocators.FIELD_COMMENT, data["comment"])
 
-        try:
-            self.click_to_element(OrderPageLocators.BUTTON_ORDER)
-        except:
-            order_btn = self.driver.find_element(*OrderPageLocators.BUTTON_ORDER)
-            self.driver.execute_script("arguments[0].click();", order_btn)
+    @allure.step("Кликаем кнопку 'Заказать' после заполнения данных")
+    def click_status_check_button(self):
+        self.click_to_element(OrderPageLocators.BUTTON_ORDER)
 
     @allure.step("Подтверждаем заказ в модальном окне")
     def confirm_order(self):
         """Подтверждает заказ в модальном окне"""
         self.find_element_with_wait(OrderPageLocators.MODAL_CONFIRM)
         self.click_to_element(OrderPageLocators.BUTTON_CONFIRM_YES)
+
+    @allure.step("Полный цикл заполнения заказа")
+    def set_order(self, button_locator, data):
+        """Принимает словарь с данными для заказа и выполняет все шаги до подтверждения"""
+        self.go_to_url(BASE_URL)
+        self.close_cookie_window(BasePageLocators.ACCEPT_COOKIE_BUTTON)
+        self.scroll_to_element(button_locator)
+        self.click_to_element(button_locator)
+        self.fill_first_step(data)
+        self.click_next_button()
+        self.fill_second_step(data)
+        self.click_status_check_button()
+        self.confirm_order()
 
     @allure.step("Получаем текст из окна успеха")
     def get_success_text(self):
@@ -67,4 +70,5 @@ class OrderPage(BasePage):
     @allure.step("Переходим на страницу заказа")
     def close_success_modal(self):
         """Закрывает окно успешного заказа, кликая по кнопке 'Посмотреть статус'"""
+        self.scroll_to_element(OrderPageLocators.MODAL_SUCCESS_ORDER)
         self.click_to_element(OrderPageLocators.MODAL_SUCCESS_ORDER)
