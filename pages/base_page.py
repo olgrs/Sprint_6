@@ -16,8 +16,12 @@ class BasePage:
         return self.driver.find_element(*locator)
 
     def click_to_element(self, some):
-        self.wait.until(EC.element_to_be_clickable(some))
-        self.driver.find_element(*some).click()
+        try:
+            self.wait.until(EC.element_to_be_clickable(some))
+            self.driver.find_element(*some).click()
+        except:
+            next_btn = self.driver.find_element(*some)
+            self.driver.execute_script("arguments[0].click();", next_btn)
 
     def wait_text(self, locator, text):
         self.wait.until_not(
